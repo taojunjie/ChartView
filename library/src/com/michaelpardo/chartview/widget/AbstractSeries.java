@@ -17,21 +17,18 @@ public abstract class AbstractSeries {
 
 	protected Paint mPaint = new Paint();
 
-	protected float mScaleX = 1;
-	protected float mScaleY = 1;
-
 	private List<AbstractPoint> mPoints;
 	private boolean mPointsSorted = false;
 
 	private double mMinX = Double.MAX_VALUE;
-	private double mMaxX = Double.MIN_VALUE;
+	private double mMaxX = -Double.MAX_VALUE;
 	private double mMinY = Double.MAX_VALUE;
-	private double mMaxY = Double.MIN_VALUE;
+	private double mMaxY = -Double.MAX_VALUE;
 
 	private double mRangeX = 0;
 	private double mRangeY = 0;
 
-	protected abstract void drawPoint(Canvas canvas, AbstractPoint point, float scaleX, float scaleY, Rect gridBounds);
+	protected abstract void drawPoint(Canvas canvas, AbstractPoint point, Rect viewBounds, RectD viewport);
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
@@ -96,9 +93,9 @@ public abstract class AbstractSeries {
 
 	private void resetRange() {
 		mMinX = Double.MAX_VALUE;
-		mMaxX = Double.MIN_VALUE;
+		mMaxX = -Double.MAX_VALUE;
 		mMinY = Double.MAX_VALUE;
-		mMaxY = Double.MIN_VALUE;
+		mMaxY = -Double.MAX_VALUE;
 
 		mRangeX = 0;
 		mRangeY = 0;
@@ -149,14 +146,11 @@ public abstract class AbstractSeries {
 		return mRangeY;
 	}
 
-	void draw(Canvas canvas, Rect gridBounds, RectD viewportBounds, RectD valueBounds) {
+	void draw(Canvas canvas, Rect viewBounds, RectD viewport) {
 		sortPoints();
 
-		final float scaleX = (float) gridBounds.width() / (float) valueBounds.width();
-		final float scaleY = (float) gridBounds.height() / (float) valueBounds.height();
-
 		for (AbstractPoint point : mPoints) {
-			drawPoint(canvas, point, scaleX, scaleY, gridBounds);
+			drawPoint(canvas, point, viewBounds, viewport);
 		}
 
 		onDrawingComplete();

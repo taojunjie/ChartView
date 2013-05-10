@@ -8,11 +8,28 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener;
 import android.view.View;
 
 import com.michaelpardo.chartview.graphics.RectD;
 
 public class ChartCanvasView extends View {
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PUBLIC CONSTATNTS
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	public static final float DEFAULT_ZOOM = 1;
+	public static final float DEFAULT_MIN_ZOOM = 0.1f;
+	public static final float DEFAULT_MAX_ZOOM = 5f;
+
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PRIVATE CONSTATNTS
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	private static final int INVALID_POINTER_ID = -1;
+
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE MEMBERS
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -25,18 +42,29 @@ public class ChartCanvasView extends View {
 
 	private Rect mViewBounds = new Rect();
 
-	private int mGridLinesHorizontal;
-	private int mGridLinesVertical;
+	private float mGridStepX;
+	private float mGridStepY;
 
 	// Value range
-	private RectD mValueBounds = new RectD();
-	private double mMinX = Double.MAX_VALUE;
-	private double mMinY = Double.MAX_VALUE;
-	private double mMaxX = Double.MIN_VALUE;
-	private double mMaxY = Double.MIN_VALUE;
+	private RectD mValueBounds = new RectD(Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+	// User range
+	private RectD mUserBounds = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+	// Viewport
+	private RectD mViewport = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+	private float mViewportOffsetX = 0;
+	private float mViewportOffsetY = 0;
 
-	// Viewport range
-	private RectD mViewportBounds = new RectD(Double.NaN, Double.NaN, Double.NaN, Double.NaN);
+	// Zoom
+	private float mZoom = DEFAULT_ZOOM;
+	private float mMinZoom = DEFAULT_MIN_ZOOM;
+	private float mMaxZoom = DEFAULT_MAX_ZOOM;
+
+	// Touch
+	private int mActivePointerId = INVALID_POINTER_ID;
+	private float mLastTouchX;
+	private float mLastTouchY;
+
+	private ScaleGestureDetector mScaleGestureDetector;
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
@@ -48,7 +76,10 @@ public class ChartCanvasView extends View {
 
 	public ChartCanvasView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+
 		setWillNotDraw(false);
+
+		mScaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -68,8 +99,69 @@ public class ChartCanvasView extends View {
 		drawGrid(canvas);
 
 		for (AbstractSeries series : mSeries) {
-			series.draw(canvas, mViewBounds, mViewportBounds, mValueBounds);
+			series.draw(canvas, mViewBounds, mViewport);
 		}
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		mScaleGestureDetector.onTouchEvent(event);
+
+		final int action = event.getAction();
+		switch (action & MotionEvent.ACTION_MASK) {
+		case MotionEvent.ACTION_DOWN: {
+			final float x = event.getX();
+			final float y = event.getY();
+
+			mLastTouchX = x;
+			mLastTouchY = y;
+			mActivePointerId = event.getPointerId(0);
+
+			break;
+		}
+		case MotionEvent.ACTION_MOVE: {
+			final int pointerIndex = event.findPointerIndex(mActivePointerId);
+			final float x = event.getX(pointerIndex);
+			final float y = event.getY(pointerIndex);
+
+			if (!mScaleGestureDetector.isInProgress()) {
+				final float dx = x - mLastTouchX;
+				final float dy = y - mLastTouchY;
+
+				mViewportOffsetX += dx;
+				mViewportOffsetY += dy;
+
+				updateViewport();
+				invalidate();
+			}
+
+			mLastTouchX = x;
+			mLastTouchY = y;
+
+			break;
+		}
+		case MotionEvent.ACTION_UP: {
+			mActivePointerId = INVALID_POINTER_ID;
+			break;
+		}
+		case MotionEvent.ACTION_CANCEL: {
+			mActivePointerId = INVALID_POINTER_ID;
+			break;
+		}
+		case MotionEvent.ACTION_POINTER_UP: {
+			final int pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+			final int pointerId = event.getPointerId(pointerIndex);
+			if (pointerId == mActivePointerId) {
+				final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+				mLastTouchX = event.getX(newPointerIndex);
+				mLastTouchY = event.getY(newPointerIndex);
+				mActivePointerId = event.getPointerId(newPointerIndex);
+			}
+			break;
+		}
+		}
+
+		return true;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -86,12 +178,12 @@ public class ChartCanvasView extends View {
 		return mGridPaint.getStrokeWidth();
 	}
 
-	public int getGridLinesHorizontal() {
-		return mGridLinesHorizontal;
+	public float getGridLinesHorizontal() {
+		return mGridStepX;
 	}
 
-	public int getGridLinesVertical() {
-		return mGridLinesVertical;
+	public float getGridLinesVertical() {
+		return mGridStepY;
 	}
 
 	public void setGridLineColor(int color) {
@@ -104,52 +196,80 @@ public class ChartCanvasView extends View {
 		invalidate();
 	}
 
-	public void setGridLinesHorizontal(int count) {
-		mGridLinesHorizontal = count;
+	public void setGridStepX(float step) {
+		mGridStepX = step;
 		invalidate();
 	}
 
-	public void setGridLinesVertical(int count) {
-		mGridLinesVertical = count;
+	public void setGridStepY(float step) {
+		mGridStepY = step;
 		invalidate();
 	}
 
 	// Series methods
 
 	public double getMinX() {
-		return mViewportBounds.left;
+		return mUserBounds.left;
 	}
 
 	public double getMaxX() {
-		return mViewportBounds.right;
+		return mUserBounds.right;
 	}
 
 	public double getMinY() {
-		return mViewportBounds.top;
+		return mUserBounds.top;
 	}
 
 	public double getMaxY() {
-		return mViewportBounds.bottom;
+		return mUserBounds.bottom;
+	}
+
+	public float getZoom() {
+		return mZoom;
+	}
+
+	public float getMinZoom() {
+		return mMinZoom;
+	}
+
+	public float getMaxZoom() {
+		return mMaxZoom;
 	}
 
 	public void setMinX(double minX) {
-		mViewportBounds.left = minX;
+		mUserBounds.left = minX;
+		updateViewport();
 		invalidate();
 	}
 
 	public void setMaxX(double maxX) {
-		mViewportBounds.right = maxX;
+		mUserBounds.right = maxX;
+		updateViewport();
 		invalidate();
 	}
 
 	public void setMinY(double minY) {
-		mViewportBounds.top = minY;
+		mUserBounds.top = minY;
+		updateViewport();
 		invalidate();
 	}
 
 	public void setMaxY(double maxY) {
-		mViewportBounds.bottom = maxY;
+		mUserBounds.bottom = maxY;
+		updateViewport();
 		invalidate();
+	}
+
+	public void setZoom(float zoom) {
+		mZoom = zoom;
+	}
+
+	public void setMinZoom(float minZoom) {
+		mMinZoom = minZoom;
+	}
+
+	public void setMaxZoom(float maxZoom) {
+		mMaxZoom = maxZoom;
 	}
 
 	public void clearSeries() {
@@ -176,51 +296,86 @@ public class ChartCanvasView extends View {
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	private void extendRange(double x, double y) {
-		if (x < mMinX) {
-			mMinX = x;
-		}
+		mValueBounds.left = Math.min(x, mValueBounds.left);
+		mValueBounds.top = Math.min(y, mValueBounds.top);
+		mValueBounds.right = Math.max(x, mValueBounds.right);
+		mValueBounds.bottom = Math.max(y, mValueBounds.bottom);
 
-		if (x > mMaxX) {
-			mMaxX = x;
-		}
-
-		if (y < mMinY) {
-			mMinY = y;
-		}
-
-		if (y > mMaxY) {
-			mMaxY = y;
-		}
-
-		mValueBounds.set(mMinX, mMinY, mMaxX, mMaxY);
+		updateViewport();
 	}
 
 	private void resetRange() {
-		mMinX = Double.MAX_VALUE;
-		mMaxX = Double.MIN_VALUE;
-		mMinY = Double.MAX_VALUE;
-		mMaxY = Double.MIN_VALUE;
+		mValueBounds.set(Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+		updateViewport();
+	}
 
-		mValueBounds.set(mMinX, mMinY, mMaxX, mMaxY);
+	private void updateViewport() {
+		mViewport.set(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+
+		mViewport.left = Math.max(mUserBounds.left, Math.max(mValueBounds.left, mViewport.left));
+		mViewport.top = Math.max(mUserBounds.top, Math.max(mValueBounds.top, mViewport.top));
+		mViewport.right = Math.min(mUserBounds.right, Math.min(mValueBounds.right, mViewport.right));
+		mViewport.bottom = Math.min(mUserBounds.bottom, Math.min(mValueBounds.bottom, mViewport.bottom));
+
+		mViewport.offset(mViewportOffsetX, mViewportOffsetY);
+
+		final double adjustWidth = ((mViewport.width() / mZoom) - mViewport.width()) / 2;
+		final double adjustHeight = ((mViewport.height() / mZoom) - mViewport.height()) / 2;
+
+		mViewport.left -= adjustWidth;
+		mViewport.top -= adjustHeight;
+		mViewport.right += adjustWidth;
+		mViewport.bottom += adjustHeight;
 	}
 
 	// Drawing
 
 	private void drawGrid(Canvas canvas) {
-		final float stepX = mViewBounds.width() / (float) (mGridLinesHorizontal + 1);
-		final float stepY = mViewBounds.height() / (float) (mGridLinesVertical + 1);
+		if (mGridStepX < 0) {
+			mGridStepX = (float) mValueBounds.width() / 5f;
+		}
+		if (mGridStepY < 0) {
+			mGridStepY = (float) mValueBounds.height() / 5f;
+		}
+
+		final float stepX = mViewBounds.width() / (float) (mGridStepX + 1);
+		final float stepY = mViewBounds.height() / (float) (mGridStepY + 1);
 
 		final float left = mViewBounds.left;
 		final float top = mViewBounds.top;
 		final float bottom = mViewBounds.bottom;
 		final float right = mViewBounds.right;
 
-		for (int i = 0; i < mGridLinesHorizontal + 2; i++) {
+		// draw border
+		canvas.drawLine(left, top, left, bottom, mGridPaint);
+		canvas.drawLine(left, top, right, top, mGridPaint);
+		canvas.drawLine(right, top, right, bottom, mGridPaint);
+		canvas.drawLine(left, bottom, right, bottom, mGridPaint);
+
+		// draw grid
+		for (int i = 0; i < mGridStepX + 2; i++) {
 			canvas.drawLine(left + (stepX * i), top, left + (stepX * i), bottom, mGridPaint);
 		}
 
-		for (int i = 0; i < mGridLinesVertical + 2; i++) {
+		for (int i = 0; i < mGridStepY + 2; i++) {
 			canvas.drawLine(left, top + (stepY * i), right, top + (stepY * i), mGridPaint);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////
+	// LISTENERS
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	private class ScaleListener extends SimpleOnScaleGestureListener {
+		@Override
+		public boolean onScale(ScaleGestureDetector detector) {
+			mZoom *= detector.getScaleFactor();
+			mZoom = Math.max(mMinZoom, Math.min(mZoom, mMaxZoom));
+
+			updateViewport();
+			invalidate();
+
+			return true;
 		}
 	}
 }

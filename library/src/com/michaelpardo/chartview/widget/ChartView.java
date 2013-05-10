@@ -27,7 +27,7 @@ public class ChartView extends RelativeLayout {
 
 	// Views
 
-	private ChartCanvasView mChartSurfaceView;
+	private ChartCanvasView mChartCanvasView;
 	private LinearLayout mLeftLabelLayout;
 	private LinearLayout mTopLabelLayout;
 	private LinearLayout mBottomLabelLayout;
@@ -59,19 +59,47 @@ public class ChartView extends RelativeLayout {
 
 		inflate(context, R.layout.widget_chart_view, this);
 
-		mChartSurfaceView = (ChartCanvasView) findViewById(R.id.chart_surface_view);
+		mChartCanvasView = (ChartCanvasView) findViewById(R.id.chart_surface_view);
 		mLeftLabelLayout = (LinearLayout) findViewById(R.id.left_label_layout);
 		mTopLabelLayout = (LinearLayout) findViewById(R.id.top_label_layout);
 		mRightLabelLayout = (LinearLayout) findViewById(R.id.right_label_layout);
 		mBottomLabelLayout = (LinearLayout) findViewById(R.id.bottom_label_layout);
 
 		final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ChartView);
+
 		setGridLineColor(a.getInt(R.styleable.ChartView_gridLineColor, Color.BLACK));
 		setGridLineWidth(a.getDimensionPixelSize(R.styleable.ChartView_gridLineWidth, 1));
-		setGridLinesHorizontal(a.getInt(R.styleable.ChartView_gridLinesHorizontal, 5));
-		setGridLinesVertical(a.getInt(R.styleable.ChartView_gridLinesVertical, 5));
+		setGridStepX(a.getFloat(R.styleable.ChartView_gridStepX, -1));
+		setGridStepY(a.getFloat(R.styleable.ChartView_gridStepY, -1));
+
+		if (a.hasValue(R.styleable.ChartView_minX)) {
+			setMinX(a.getFloat(R.styleable.ChartView_minX, -Float.MAX_VALUE));
+		}
+		if (a.hasValue(R.styleable.ChartView_minY)) {
+			setMinY(a.getFloat(R.styleable.ChartView_minY, -Float.MAX_VALUE));
+		}
+		if (a.hasValue(R.styleable.ChartView_maxX)) {
+			setMaxX(a.getFloat(R.styleable.ChartView_maxX, -Float.MAX_VALUE));
+		}
+		if (a.hasValue(R.styleable.ChartView_maxY)) {
+			setMaxY(a.getFloat(R.styleable.ChartView_maxY, -Float.MAX_VALUE));
+		}
+
+		setZoom(a.getFloat(R.styleable.ChartView_zoom, ChartCanvasView.DEFAULT_ZOOM));
+		setMinZoom(a.getFloat(R.styleable.ChartView_minZoom, ChartCanvasView.DEFAULT_MIN_ZOOM));
+		setMaxZoom(a.getFloat(R.styleable.ChartView_maxZoom, ChartCanvasView.DEFAULT_MAX_ZOOM));
 
 		a.recycle();
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////
+	// OVERRIDES
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	@Override
+	protected void onDraw(Canvas canvas) {
+		super.onDraw(canvas);
+		drawLabels(canvas);
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -79,12 +107,12 @@ public class ChartView extends RelativeLayout {
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	public void clearSeries() {
-		mChartSurfaceView.clearSeries();
+		mChartCanvasView.clearSeries();
 		invalidate();
 	}
 
 	public void addSeries(AbstractSeries series) {
-		mChartSurfaceView.addSeries(series);
+		mChartCanvasView.addSeries(series);
 		invalidate();
 	}
 
@@ -116,83 +144,93 @@ public class ChartView extends RelativeLayout {
 	// Grid properties
 
 	public int getGridColor() {
-		return mChartSurfaceView.getGridColor();
+		return mChartCanvasView.getGridColor();
 	}
 
 	public float getGridLineWidth() {
-		return mChartSurfaceView.getGridLineWidth();
+		return mChartCanvasView.getGridLineWidth();
 	}
 
-	public int getGridLinesHorizontal() {
-		return mChartSurfaceView.getGridLinesHorizontal();
+	public float getGridLinesHorizontal() {
+		return mChartCanvasView.getGridLinesHorizontal();
 	}
 
-	public int getGridLinesVertical() {
-		return mChartSurfaceView.getGridLinesVertical();
+	public float getGridLinesVertical() {
+		return mChartCanvasView.getGridLinesVertical();
 	}
 
 	public void setGridLineColor(int color) {
-		mChartSurfaceView.setGridLineColor(color);
+		mChartCanvasView.setGridLineColor(color);
 		invalidate();
 	}
 
 	public void setGridLineWidth(float width) {
-		mChartSurfaceView.setGridLineWidth(width);
+		mChartCanvasView.setGridLineWidth(width);
 		invalidate();
 	}
 
-	public void setGridLinesHorizontal(int count) {
-		mChartSurfaceView.setGridLinesHorizontal(count);
+	public void setGridStepX(float step) {
+		mChartCanvasView.setGridStepX(step);
 		invalidate();
 	}
 
-	public void setGridLinesVertical(int count) {
-		mChartSurfaceView.setGridLinesVertical(count);
+	public void setGridStepY(float step) {
+		mChartCanvasView.setGridStepY(step);
 		invalidate();
 	}
 
-	// Series methods
+	// Chart methods
 
 	public double getMinX() {
-		return mChartSurfaceView.getMinX();
+		return mChartCanvasView.getMinX();
 	}
 
 	public double getMaxX() {
-		return mChartSurfaceView.getMaxX();
+		return mChartCanvasView.getMaxX();
 	}
 
 	public double getMinY() {
-		return mChartSurfaceView.getMinY();
+		return mChartCanvasView.getMinY();
 	}
 
 	public double getMaxY() {
-		return mChartSurfaceView.getMaxY();
+		return mChartCanvasView.getMaxY();
+	}
+
+	public float getZoom() {
+		return mChartCanvasView.getZoom();
 	}
 
 	public void setMinX(double minX) {
-		mChartSurfaceView.setMinX(minX);
+		mChartCanvasView.setMinX(minX);
 		invalidate();
 	}
 
 	public void setMaxX(double maxX) {
-		mChartSurfaceView.setMaxX(maxX);
+		mChartCanvasView.setMaxX(maxX);
 		invalidate();
 	}
 
 	public void setMinY(double minY) {
-		mChartSurfaceView.setMinY(minY);
+		mChartCanvasView.setMinY(minY);
 		invalidate();
 	}
 
 	public void setMaxY(double maxY) {
-		mChartSurfaceView.setMaxY(maxY);
+		mChartCanvasView.setMaxY(maxY);
 		invalidate();
 	}
 
-	@Override
-	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
-		drawLabels(canvas);
+	public void setZoom(float zoom) {
+		mChartCanvasView.setZoom(zoom);
+	}
+
+	public void setMinZoom(float minZoom) {
+		mChartCanvasView.setMinZoom(minZoom);
+	}
+
+	public void setMaxZoom(float maxZoom) {
+		mChartCanvasView.setMaxZoom(maxZoom);
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////

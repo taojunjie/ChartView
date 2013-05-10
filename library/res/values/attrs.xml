@@ -4,12 +4,15 @@
     <declare-styleable name="ChartView">
         <attr name="gridLineColor" format="reference|color" />
         <attr name="gridLineWidth" format="reference|dimension" />
-        <attr name="gridLinesHorizontal" format="reference|integer" />
-        <attr name="gridLinesVertical" format="reference|integer" />
+        <attr name="gridStepX" format="reference|float" />
+        <attr name="gridStepY" format="reference|float" />
         <attr name="minX" format="reference|integer" />
         <attr name="minY" format="reference|integer" />
         <attr name="maxX" format="reference|integer" />
         <attr name="maxY" format="reference|integer" />
+        <attr name="zoom" format="reference|float" />
+        <attr name="minZoom" format="reference|float" />
+        <attr name="maxZoom" format="reference|float" />
     </declare-styleable>
 
 </resources>

@@ -4,13 +4,25 @@ import android.graphics.Canvas;
 import android.graphics.PointF;
 import android.graphics.Rect;
 
+import com.michaelpardo.chartview.graphics.RectD;
+
 public class LinearSeries extends AbstractSeries {
 	private PointF mLastPoint;
 
+	private float mScaleX = Float.NaN;
+	private float mScaleY = Float.NaN;
+
 	@Override
-	public void drawPoint(Canvas canvas, AbstractPoint point, float scaleX, float scaleY, Rect gridBounds) {
-		final float x = (float) (gridBounds.left + (scaleX * (point.getX() - getMinX())));
-		final float y = (float) (gridBounds.bottom - (scaleY * (point.getY() - getMinY())));
+	public void drawPoint(Canvas canvas, AbstractPoint point, Rect viewBounds, RectD viewport) {
+		if (Float.isNaN(mScaleX)) {
+			mScaleX = (float) viewBounds.width() / (float) viewport.width();
+		}
+		if (Float.isNaN(mScaleY)) {
+			mScaleY = (float) viewBounds.height() / (float) viewport.height();
+		}
+
+		final float x = (float) (viewBounds.left + (mScaleX * (point.getX() - getMinX())) + viewport.left);
+		final float y = (float) (viewBounds.bottom - (mScaleY * (point.getY() - getMinY())) + viewport.bottom);
 
 		if (mLastPoint != null) {
 			canvas.drawLine(mLastPoint.x, mLastPoint.y, x, y, mPaint);
@@ -25,6 +37,8 @@ public class LinearSeries extends AbstractSeries {
 	@Override
 	protected void onDrawingComplete() {
 		mLastPoint = null;
+		mScaleX = Float.NaN;
+		mScaleY = Float.NaN;
 	}
 
 	public static class LinearPoint extends AbstractPoint {

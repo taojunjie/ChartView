@@ -23,14 +23,11 @@ public class MainActivity extends Activity {
 		series.setLineColor(0xFF0099CC);
 		series.setLineWidth(2);
 
-		for (double i = -(2d * Math.PI); i <= (2d * Math.PI); i += 0.1d) {
+		for (double i = -(20d * Math.PI); i <= (20d * Math.PI); i += 0.1d) {
 			series.addPoint(new LinearPoint(i, Math.sin(i)));
 		}
 
 		// Add chart view data
-		chartView.setMinX(0d);
-		chartView.setMaxX(2d * Math.PI);
-
 		chartView.addSeries(series);
 		chartView.setLabelAdapter(new ValueLabelAdapter(this, Orientation.VERTICAL), ChartView.POSITION_LEFT);
 		chartView.setLabelAdapter(new ValueLabelAdapter(this, Orientation.HORIZONTAL), ChartView.POSITION_BOTTOM);

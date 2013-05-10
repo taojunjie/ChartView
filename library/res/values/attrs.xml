@@ -6,10 +6,10 @@
         <attr name="gridLineWidth" format="reference|dimension" />
         <attr name="gridLinesHorizontal" format="reference|integer" />
         <attr name="gridLinesVertical" format="reference|integer" />
-        <attr name="leftLabelWidth" format="reference|dimension" />
-        <attr name="topLabelHeight" format="reference|dimension" />
-        <attr name="rightLabelWidth" format="reference|dimension" />
-        <attr name="bottomLabelHeight" format="reference|dimension" />
+        <attr name="minX" format="reference|integer" />
+        <attr name="minY" format="reference|integer" />
+        <attr name="maxX" format="reference|integer" />
+        <attr name="maxY" format="reference|integer" />
     </declare-styleable>
 
 </resources>

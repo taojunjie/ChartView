@@ -1,69 +1,44 @@
 package com.michaelpardo.chartview.widget;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import com.michaelpardo.chartview.R;
-import com.michaelpardo.chartview.graphics.RectD;
 
 public class ChartView extends RelativeLayout {
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PUBLIC CONSTANTS
+	//////////////////////////////////////////////////////////////////////////////////////
+
+	public static final int POSITION_LEFT = 0;
+	public static final int POSITION_TOP = 1;
+	public static final int POSITION_RIGHT = 2;
+	public static final int POSITION_BOTTOM = 3;
+
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE MEMBERS
 	//////////////////////////////////////////////////////////////////////////////////////
 
-	private Paint mPaint = new Paint();
-
-	// Series
-
-	private List<AbstractSeries> mSeries = new ArrayList<AbstractSeries>();
-
 	// Views
 
-	private View mChartView;
-
-	// Labels
-
-	private LabelAdapter mLeftLabelAdapter;
-	private LabelAdapter mTopLabelAdapter;
-	private LabelAdapter mBottomLabelAdapter;
-	private LabelAdapter mRightLabelAdapter;
-
+	private ChartCanvasView mChartSurfaceView;
 	private LinearLayout mLeftLabelLayout;
 	private LinearLayout mTopLabelLayout;
 	private LinearLayout mBottomLabelLayout;
 	private LinearLayout mRightLabelLayout;
 
-	private int mLeftLabelWidth;
-	private int mTopLabelHeight;
-	private int mRightLabelWidth;
-	private int mBottomLabelHeight;
+	// Adapters
 
-	// Range
-	private RectD mValueBounds = new RectD();
-	private double mMinX = Double.MAX_VALUE;
-	private double mMaxX = Double.MIN_VALUE;
-	private double mMinY = Double.MAX_VALUE;
-	private double mMaxY = Double.MIN_VALUE;
-
-	// Grid
-
-	private Rect mGridBounds = new Rect();
-	private int mGridLineColor;
-	private int mGridLineWidth;
-	private int mGridLinesHorizontal;
-	private int mGridLinesVertical;
+	private LabelAdapter mLeftLabelAdapter;
+	private LabelAdapter mTopLabelAdapter;
+	private LabelAdapter mBottomLabelAdapter;
+	private LabelAdapter mRightLabelAdapter;
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
@@ -84,21 +59,19 @@ public class ChartView extends RelativeLayout {
 
 		inflate(context, R.layout.widget_chart_view, this);
 
-		final TypedArray attributes = context.obtainStyledAttributes(attrs, R.styleable.ChartView);
-
-		mGridLineColor = attributes.getInt(R.styleable.ChartView_gridLineColor, Color.BLACK);
-		mGridLineWidth = attributes.getDimensionPixelSize(R.styleable.ChartView_gridLineWidth, 1);
-		mGridLinesHorizontal = attributes.getInt(R.styleable.ChartView_gridLinesHorizontal, 5);
-		mGridLinesVertical = attributes.getInt(R.styleable.ChartView_gridLinesVertical, 5);
-		mLeftLabelWidth = attributes.getDimensionPixelSize(R.styleable.ChartView_leftLabelWidth, 0);
-		mTopLabelHeight = attributes.getDimensionPixelSize(R.styleable.ChartView_topLabelHeight, 0);
-		mRightLabelWidth = attributes.getDimensionPixelSize(R.styleable.ChartView_rightLabelWidth, 0);
-		mBottomLabelHeight = attributes.getDimensionPixelSize(R.styleable.ChartView_bottomLabelHeight, 0);
-
+		mChartSurfaceView = (ChartCanvasView) findViewById(R.id.chart_surface_view);
 		mLeftLabelLayout = (LinearLayout) findViewById(R.id.left_label_layout);
 		mTopLabelLayout = (LinearLayout) findViewById(R.id.top_label_layout);
 		mRightLabelLayout = (LinearLayout) findViewById(R.id.right_label_layout);
 		mBottomLabelLayout = (LinearLayout) findViewById(R.id.bottom_label_layout);
+
+		final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ChartView);
+		setGridLineColor(a.getInt(R.styleable.ChartView_gridLineColor, Color.BLACK));
+		setGridLineWidth(a.getDimensionPixelSize(R.styleable.ChartView_gridLineWidth, 1));
+		setGridLinesHorizontal(a.getInt(R.styleable.ChartView_gridLinesHorizontal, 5));
+		setGridLinesVertical(a.getInt(R.styleable.ChartView_gridLinesVertical, 5));
+
+		a.recycle();
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -106,213 +79,190 @@ public class ChartView extends RelativeLayout {
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	public void clearSeries() {
-		mSeries = new ArrayList<AbstractSeries>();
-		resetRange();
+		mChartSurfaceView.clearSeries();
 		invalidate();
 	}
 
 	public void addSeries(AbstractSeries series) {
-		if (mSeries == null) {
-			mSeries = new ArrayList<AbstractSeries>();
-		}
-
-		extendRange(series.getMinX(), series.getMinY());
-		extendRange(series.getMaxX(), series.getMaxY());
-
-		mSeries.add(series);
-
+		mChartSurfaceView.addSeries(series);
 		invalidate();
 	}
 
 	// Label adapters
 
-	public void setLeftLabelAdapter(LabelAdapter adapter) {
-		mLeftLabelAdapter = adapter;
-
-		final double[] values = new double[mGridLinesVertical + 2];
-		final double step = mValueBounds.height() / (mGridLinesVertical + 1);
-		for (int i = 0; i < values.length; i++) {
-			values[i] = mValueBounds.top + (step * i);
+	public void setLabelAdapter(LabelAdapter adapter, int position) {
+		switch (position) {
+		case POSITION_LEFT: {
+			setLeftLabelAdapter(adapter);
+			break;
+		}
+		case POSITION_TOP: {
+			setTopLabelAdapter(adapter);
+			break;
+		}
+		case POSITION_RIGHT: {
+			setRightLabelAdapter(adapter);
+			break;
+		}
+		case POSITION_BOTTOM: {
+			setBottomLabelAdapter(adapter);
+			break;
+		}
 		}
 
-		mLeftLabelAdapter.setValues(values);
-	}
-
-	public void setTopLabelAdapter(LabelAdapter adapter) {
-		mTopLabelAdapter = adapter;
-
-		final double[] values = new double[mGridLinesHorizontal + 2];
-		final double step = mValueBounds.width() / (mGridLinesHorizontal + 1);
-		for (int i = 0; i < values.length; i++) {
-			values[i] = mValueBounds.left + (step * i);
-		}
-
-		mTopLabelAdapter.setValues(values);
-	}
-
-	public void setRightLabelAdapter(LabelAdapter adapter) {
-		mRightLabelAdapter = adapter;
-
-		final double[] values = new double[mGridLinesVertical + 2];
-		final double step = mValueBounds.height() / (mGridLinesVertical + 1);
-		for (int i = 0; i < values.length; i++) {
-			values[i] = mValueBounds.top + (step * i);
-		}
-
-		mRightLabelAdapter.setValues(values);
-	}
-
-	public void setBottomLabelAdapter(LabelAdapter adapter) {
-		mBottomLabelAdapter = adapter;
-
-		final double[] values = new double[mGridLinesHorizontal + 2];
-		final double step = mValueBounds.width() / (mGridLinesHorizontal + 1);
-		for (int i = 0; i < values.length; i++) {
-			values[i] = mValueBounds.left + (step * i);
-		}
-
-		mBottomLabelAdapter.setValues(values);
+		invalidate();
 	}
 
 	// Grid properties
 
-	public void setGridLineColor(int color) {
-		mGridLineColor = color;
+	public int getGridColor() {
+		return mChartSurfaceView.getGridColor();
 	}
 
-	public void setGridLineWidth(int width) {
-		mGridLineWidth = width;
+	public float getGridLineWidth() {
+		return mChartSurfaceView.getGridLineWidth();
+	}
+
+	public int getGridLinesHorizontal() {
+		return mChartSurfaceView.getGridLinesHorizontal();
+	}
+
+	public int getGridLinesVertical() {
+		return mChartSurfaceView.getGridLinesVertical();
+	}
+
+	public void setGridLineColor(int color) {
+		mChartSurfaceView.setGridLineColor(color);
+		invalidate();
+	}
+
+	public void setGridLineWidth(float width) {
+		mChartSurfaceView.setGridLineWidth(width);
+		invalidate();
 	}
 
 	public void setGridLinesHorizontal(int count) {
-		mGridLinesHorizontal = count;
+		mChartSurfaceView.setGridLinesHorizontal(count);
+		invalidate();
 	}
 
 	public void setGridLinesVertical(int count) {
-		mGridLinesVertical = count;
+		mChartSurfaceView.setGridLinesVertical(count);
+		invalidate();
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////
-	// OVERRIDEN METHODS
-	//////////////////////////////////////////////////////////////////////////////////////
+	// Series methods
 
-	@Override
-	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-		super.onLayout(changed, left, top, right, bottom);
+	public double getMinX() {
+		return mChartSurfaceView.getMinX();
+	}
 
-		final int gridLeft = mLeftLabelWidth + mGridLineWidth - 1;
-		final int gridTop = mTopLabelHeight + mGridLineWidth - 1;
-		final int gridRight = getWidth() - mRightLabelWidth - mGridLineWidth;
-		final int gridBottom = getHeight() - mBottomLabelHeight - mGridLineWidth;
+	public double getMaxX() {
+		return mChartSurfaceView.getMaxX();
+	}
 
-		mGridBounds.set(gridLeft, gridTop, gridRight, gridBottom);
+	public double getMinY() {
+		return mChartSurfaceView.getMinY();
+	}
 
-		// Set sizes
-		LayoutParams leftParams = (LayoutParams) mLeftLabelLayout.getLayoutParams();
-		leftParams.height = mGridBounds.height();
-		mLeftLabelLayout.setLayoutParams(leftParams);
+	public double getMaxY() {
+		return mChartSurfaceView.getMaxY();
+	}
 
-		LayoutParams topParams = (LayoutParams) mTopLabelLayout.getLayoutParams();
-		topParams.width = mGridBounds.width();
-		mTopLabelLayout.setLayoutParams(topParams);
+	public void setMinX(double minX) {
+		mChartSurfaceView.setMinX(minX);
+		invalidate();
+	}
 
-		LayoutParams rightParams = (LayoutParams) mRightLabelLayout.getLayoutParams();
-		rightParams.height = mGridBounds.height();
-		mRightLabelLayout.setLayoutParams(rightParams);
+	public void setMaxX(double maxX) {
+		mChartSurfaceView.setMaxX(maxX);
+		invalidate();
+	}
 
-		LayoutParams bottomParams = (LayoutParams) mBottomLabelLayout.getLayoutParams();
-		bottomParams.width = mGridBounds.width();
-		mBottomLabelLayout.setLayoutParams(bottomParams);
+	public void setMinY(double minY) {
+		mChartSurfaceView.setMinY(minY);
+		invalidate();
+	}
 
-		// Set layouts
-		mLeftLabelLayout.layout(0, gridTop, gridLeft, gridBottom);
-		mTopLabelLayout.layout(gridLeft, 0, gridRight, gridTop);
-		mRightLabelLayout.layout(gridRight, gridTop, getWidth(), gridBottom);
-		mBottomLabelLayout.layout(gridLeft, gridBottom, gridRight, getHeight());
+	public void setMaxY(double maxY) {
+		mChartSurfaceView.setMaxY(maxY);
+		invalidate();
 	}
 
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-
-		// Start drawing
-		drawGrid(canvas);
 		drawLabels(canvas);
-
-		for (AbstractSeries series : mSeries) {
-			series.draw(canvas, mGridBounds, mValueBounds);
-		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE METHODS
 	//////////////////////////////////////////////////////////////////////////////////////
 
-	private void resetRange() {
-		mMinX = Double.MAX_VALUE;
-		mMaxX = Double.MIN_VALUE;
-		mMinY = Double.MAX_VALUE;
-		mMaxY = Double.MIN_VALUE;
+	private void setLeftLabelAdapter(LabelAdapter adapter) {
+		//		mLeftLabelAdapter = adapter;
+		mLeftLabelLayout.setVisibility(adapter == null ? View.GONE : View.VISIBLE);
 
-		mValueBounds.set(mMinX, mMinY, mMaxX, mMaxY);
+		//		final double[] values = new double[mGridLinesVertical + 2];
+		//		final double step = mValueBounds.height() / (mGridLinesVertical + 1);
+		//		for (int i = 0; i < values.length; i++) {
+		//			values[i] = mValueBounds.top + (step * i);
+		//		}
+		//
+		//		mLeftLabelAdapter.setValues(values);
 	}
 
-	private void extendRange(double x, double y) {
-		if (x < mMinX) {
-			mMinX = x;
-		}
+	private void setTopLabelAdapter(LabelAdapter adapter) {
+		//		mTopLabelAdapter = adapter;
+		mTopLabelLayout.setVisibility(adapter == null ? View.GONE : View.VISIBLE);
 
-		if (x > mMaxX) {
-			mMaxX = x;
-		}
+		//		final double[] values = new double[mGridLinesHorizontal + 2];
+		//		final double step = mValueBounds.width() / (mGridLinesHorizontal + 1);
+		//		for (int i = 0; i < values.length; i++) {
+		//			values[i] = mValueBounds.left + (step * i);
+		//		}
+		//
+		//		mTopLabelAdapter.setValues(values);
+	}
 
-		if (y < mMinY) {
-			mMinY = y;
-		}
+	private void setRightLabelAdapter(LabelAdapter adapter) {
+		//		mRightLabelAdapter = adapter;
+		mRightLabelLayout.setVisibility(adapter == null ? View.GONE : View.VISIBLE);
 
-		if (y > mMaxY) {
-			mMaxY = y;
-		}
+		//		final double[] values = new double[mGridLinesVertical + 2];
+		//		final double step = mValueBounds.height() / (mGridLinesVertical + 1);
+		//		for (int i = 0; i < values.length; i++) {
+		//			values[i] = mValueBounds.top + (step * i);
+		//		}
+		//
+		//		mRightLabelAdapter.setValues(values);
+	}
 
-		mValueBounds.set(mMinX, mMinY, mMaxX, mMaxY);
+	private void setBottomLabelAdapter(LabelAdapter adapter) {
+		//		mBottomLabelAdapter = adapter;
+		mBottomLabelLayout.setVisibility(adapter == null ? View.GONE : View.VISIBLE);
+
+		//		final double[] values = new double[mGridLinesHorizontal + 2];
+		//		final double step = mValueBounds.width() / (mGridLinesHorizontal + 1);
+		//		for (int i = 0; i < values.length; i++) {
+		//			values[i] = mValueBounds.left + (step * i);
+		//		}
+		//
+		//		mBottomLabelAdapter.setValues(values);
 	}
 
 	// Drawing methods
-
-	private void drawGrid(Canvas canvas) {
-		mPaint.setColor(mGridLineColor);
-		mPaint.setStrokeWidth(mGridLineWidth);
-
-		final float stepX = mGridBounds.width() / (float) (mGridLinesHorizontal + 1);
-		final float stepY = mGridBounds.height() / (float) (mGridLinesVertical + 1);
-
-		final float left = mGridBounds.left;
-		final float top = mGridBounds.top;
-		final float bottom = mGridBounds.bottom;
-		final float right = mGridBounds.right;
-
-		for (int i = 0; i < mGridLinesHorizontal + 2; i++) {
-			canvas.drawLine(left + (stepX * i), top, left + (stepX * i), bottom, mPaint);
-		}
-
-		for (int i = 0; i < mGridLinesVertical + 2; i++) {
-			canvas.drawLine(left, top + (stepY * i), right, top + (stepY * i), mPaint);
-		}
-	}
 
 	private void drawLabels(Canvas canvas) {
 		if (mLeftLabelAdapter != null) {
 			drawLeftLabels(canvas);
 		}
-
 		if (mTopLabelAdapter != null) {
 			drawTopLabels(canvas);
 		}
-
 		if (mRightLabelAdapter != null) {
 			drawRightLabels(canvas);
 		}
-
 		if (mBottomLabelAdapter != null) {
 			drawBottomLabels(canvas);
 		}
@@ -446,16 +396,5 @@ public class ChartView extends RelativeLayout {
 		for (int i = labelCount; i < childCount; i++) {
 			mBottomLabelLayout.removeViewAt(i);
 		}
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////
-	// PRIVATE CLASSES
-	//////////////////////////////////////////////////////////////////////////////////////
-
-	private static final class ChartSurfaceView extends SurfaceView {
-		public ChartSurfaceView(Context context) {
-			super(context);
-		}
-
 	}
 }

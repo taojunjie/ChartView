@@ -31,7 +31,7 @@ public abstract class AbstractSeries {
 	private double mRangeX = 0;
 	private double mRangeY = 0;
 
-	protected abstract void drawPoint(Canvas canvas, AbstractPoint point, float scaleX, float scalY, Rect gridBounds);
+	protected abstract void drawPoint(Canvas canvas, AbstractPoint point, float scaleX, float scaleY, Rect gridBounds);
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
@@ -149,7 +149,7 @@ public abstract class AbstractSeries {
 		return mRangeY;
 	}
 
-	void draw(Canvas canvas, Rect gridBounds, RectD valueBounds) {
+	void draw(Canvas canvas, Rect gridBounds, RectD viewportBounds, RectD valueBounds) {
 		sortPoints();
 
 		final float scaleX = (float) gridBounds.width() / (float) valueBounds.width();

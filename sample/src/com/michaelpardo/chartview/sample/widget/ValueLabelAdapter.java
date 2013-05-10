@@ -9,14 +9,14 @@ import android.widget.TextView;
 import com.michaelpardo.chartview.widget.LabelAdapter;
 
 public class ValueLabelAdapter extends LabelAdapter {
-	public enum LabelOrientation {
+	public enum Orientation {
 		HORIZONTAL, VERTICAL
 	}
 
 	private Context mContext;
-	private LabelOrientation mOrientation;
+	private Orientation mOrientation;
 
-	public ValueLabelAdapter(Context context, LabelOrientation orientation) {
+	public ValueLabelAdapter(Context context, Orientation orientation) {
 		mContext = context;
 		mOrientation = orientation;
 	}
@@ -31,7 +31,7 @@ public class ValueLabelAdapter extends LabelAdapter {
 		labelTextView = (TextView) convertView;
 
 		int gravity = Gravity.CENTER;
-		if (mOrientation == LabelOrientation.VERTICAL) {
+		if (mOrientation == Orientation.VERTICAL) {
 			if (position == 0) {
 				gravity = Gravity.BOTTOM | Gravity.RIGHT;
 			}
@@ -42,7 +42,7 @@ public class ValueLabelAdapter extends LabelAdapter {
 				gravity = Gravity.CENTER | Gravity.RIGHT;
 			}
 		}
-		else if (mOrientation == LabelOrientation.HORIZONTAL) {
+		else if (mOrientation == Orientation.HORIZONTAL) {
 			if (position == 0) {
 				gravity = Gravity.CENTER | Gravity.LEFT;
 			}

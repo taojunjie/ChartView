@@ -84,13 +84,6 @@ public abstract class AbstractSeries {
 	// PRIVATE METHODS
 	//////////////////////////////////////////////////////////////////////////////////////
 
-	private void sortPoints() {
-		if (!mPointsSorted) {
-			Collections.sort(mPoints);
-			mPointsSorted = true;
-		}
-	}
-
 	private void resetRange() {
 		mMinX = Double.MAX_VALUE;
 		mMaxX = -Double.MAX_VALUE;
@@ -146,7 +139,7 @@ public abstract class AbstractSeries {
 		return mRangeY;
 	}
 
-	void draw(Canvas canvas, Rect viewBounds, RectD viewport) {
+	protected void draw(Canvas canvas, Rect viewBounds, RectD viewport) {
 		sortPoints();
 
 		for (AbstractPoint point : mPoints) {
@@ -154,6 +147,13 @@ public abstract class AbstractSeries {
 		}
 
 		onDrawingComplete();
+	}
+
+	protected void sortPoints() {
+		if (!mPointsSorted) {
+			Collections.sort(mPoints);
+			mPointsSorted = true;
+		}
 	}
 
 	protected void onDrawingComplete() {

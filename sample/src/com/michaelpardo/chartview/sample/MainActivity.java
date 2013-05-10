@@ -28,6 +28,9 @@ public class MainActivity extends Activity {
 		}
 
 		// Add chart view data
+		chartView.setGridStepX((float) (Math.PI / 4));
+		chartView.setGridStepY((float) (Math.PI / 4));
+
 		chartView.addSeries(series);
 		chartView.setLabelAdapter(new ValueLabelAdapter(this, Orientation.VERTICAL), ChartView.POSITION_LEFT);
 		chartView.setLabelAdapter(new ValueLabelAdapter(this, Orientation.HORIZONTAL), ChartView.POSITION_BOTTOM);

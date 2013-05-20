@@ -2,24 +2,36 @@ package com.michaelpardo.chartview.widget;
 
 import android.widget.BaseAdapter;
 
+import java.util.Arrays;
+
 public abstract class LabelAdapter extends BaseAdapter {
-	private double[] mValues;
+    private double[] mValues = new double[0];
+    private boolean mDatasetChanged = false;
 
-	void setValues(double[] points) {
-		mValues = points;
-	}
+    void setValues(double[] values) {
+        mDatasetChanged = !Arrays.equals(values, mValues);
+        mValues = values;
+    }
 
-	@Override
-	public int getCount() {
-		return mValues.length;
-	}
+    boolean getDatasetChanged() {
+        return mDatasetChanged;
+    }
 
-	public Double getItem(int position) {
-		return mValues[position];
-	}
+    void clearDatasetChanged() {
+        mDatasetChanged = false;
+    }
 
-	@Override
-	public long getItemId(int position) {
-		return position;
-	}
+    @Override
+    public int getCount() {
+        return mValues.length;
+    }
+
+    public Double getItem(int position) {
+        return mValues[position];
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
 }

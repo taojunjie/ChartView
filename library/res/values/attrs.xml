@@ -13,6 +13,7 @@
         <attr name="zoom" format="reference|float" />
         <attr name="minZoom" format="reference|float" />
         <attr name="maxZoom" format="reference|float" />
+        <attr name="stretchToFit" format="reference|boolean" />
     </declare-styleable>
 
 </resources>

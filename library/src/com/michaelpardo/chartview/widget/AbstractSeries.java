@@ -142,9 +142,14 @@ public abstract class AbstractSeries {
 	protected void draw(Canvas canvas, Rect viewBounds, RectD viewport) {
 		sortPoints();
 
+		canvas.save();
+		canvas.clipRect(viewBounds);
+
 		for (AbstractPoint point : mPoints) {
 			drawPoint(canvas, point, viewBounds, viewport);
 		}
+
+		canvas.restore();
 
 		onDrawingComplete();
 	}

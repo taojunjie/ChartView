@@ -76,6 +76,7 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
 
         final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ChartView);
 
+        setDrawBorder(a.getBoolean(R.styleable.ChartView_drawBorder, true));
         setGridLineColor(a.getInt(R.styleable.ChartView_gridLineColor, Color.BLACK));
         setGridLineWidth(a.getDimensionPixelSize(R.styleable.ChartView_gridLineWidth, 1));
         setGridStepX(a.getFloat(R.styleable.ChartView_gridStepX, -1));
@@ -166,6 +167,10 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
 
     // Grid properties
 
+    public boolean getDrawBorder() {
+        return mChartCanvasView.getDrawBorder();
+    }
+
     public int getGridColor() {
         return mChartCanvasView.getGridColor();
     }
@@ -180,6 +185,10 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
 
     public double getGridStepY() {
         return mChartCanvasView.getGridStepY();
+    }
+
+    public void setDrawBorder(boolean drawBorder) {
+        mChartCanvasView.setDrawBorder(drawBorder);
     }
 
     public void setGridLineColor(int color) {

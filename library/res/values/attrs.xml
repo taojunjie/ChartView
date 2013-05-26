@@ -2,6 +2,7 @@
 <resources>
 
     <declare-styleable name="ChartView">
+        <attr name="drawBorder" format="reference|boolean" />
         <attr name="gridLineColor" format="reference|color" />
         <attr name="gridLineWidth" format="reference|dimension" />
         <attr name="gridStepX" format="reference|float" />

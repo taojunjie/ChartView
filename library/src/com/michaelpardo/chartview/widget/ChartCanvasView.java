@@ -1,5 +1,8 @@
 package com.michaelpardo.chartview.widget;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -9,434 +12,444 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener;
 import android.view.View;
+
 import com.michaelpardo.chartview.graphics.RectD;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ChartCanvasView extends View {
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PUBLIC INTERFACES
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PUBLIC INTERFACES
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    public interface ChartCanvasViewListener {
-        public void onViewportChanged(RectD viewport);
-    }
+	public interface ChartCanvasViewListener {
+		public void onViewportChanged(RectD viewport);
+	}
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PUBLIC CONSTANTS
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PUBLIC CONSTANTS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    public static final float DEFAULT_ZOOM = 1;
-    public static final float DEFAULT_MIN_ZOOM = 0.1f;
-    public static final float DEFAULT_MAX_ZOOM = 5f;
+	public static final float DEFAULT_ZOOM = 1;
+	public static final float DEFAULT_MIN_ZOOM = 0.1f;
+	public static final float DEFAULT_MAX_ZOOM = 5f;
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PRIVATE CONSTANTS
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PRIVATE CONSTANTS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    private static final int INVALID_POINTER_ID = -1;
+	private static final int INVALID_POINTER_ID = -1;
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PRIVATE MEMBERS
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PRIVATE MEMBERS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    // Listeners
+	// Listeners
 
-    private ChartCanvasViewListener mChartCanvasViewListener;
+	private ChartCanvasViewListener mChartCanvasViewListener;
 
-    // Series
+	// Series
 
-    private List<AbstractSeries> mSeries = new ArrayList<AbstractSeries>();
+	private List<AbstractSeries> mSeries = new ArrayList<AbstractSeries>();
 
-    private Paint mGridPaint = new Paint();
+	private Paint mGridPaint = new Paint();
 
-    private Rect mViewBounds = new Rect();
+	private Rect mViewBounds = new Rect();
 
-    private double mGridStepX;
-    private double mGridStepY;
+	private boolean mDrawBorder = true;
+	private double mGridStepX;
+	private double mGridStepY;
 
-    // Value range
-    private RectD mValueBounds = new RectD(Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
-    // User range
-    private RectD mUserBounds = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+	// Value range
+	private RectD mValueBounds = new RectD(Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+	// User range
+	private RectD mUserBounds = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
 
-    // Viewport
-    private RectD mViewport = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
-    private float mViewportOffsetX = 0;
-    private float mViewportOffsetY = 0;
-    private boolean mStretchToFit = false;
+	// Viewport
+	private RectD mViewport = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+	private float mViewportOffsetX = 0;
+	private float mViewportOffsetY = 0;
+	private boolean mStretchToFit = false;
 
-    // Zoom
-    private float mZoom = DEFAULT_ZOOM;
-    private float mMinZoom = DEFAULT_MIN_ZOOM;
-    private float mMaxZoom = DEFAULT_MAX_ZOOM;
+	// Zoom
+	private float mZoom = DEFAULT_ZOOM;
+	private float mMinZoom = DEFAULT_MIN_ZOOM;
+	private float mMaxZoom = DEFAULT_MAX_ZOOM;
 
-    // Touch
-    private int mActivePointerId = INVALID_POINTER_ID;
-    private float mLastTouchX;
-    private float mLastTouchY;
+	// Touch
+	private int mActivePointerId = INVALID_POINTER_ID;
+	private float mLastTouchX;
+	private float mLastTouchY;
 
-    private ScaleGestureDetector mScaleGestureDetector;
+	private ScaleGestureDetector mScaleGestureDetector;
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // CONSTRUCTORS
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// CONSTRUCTORS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    public ChartCanvasView(Context context) {
-        super(context);
-    }
+	public ChartCanvasView(Context context) {
+		super(context);
+	}
 
-    public ChartCanvasView(Context context, AttributeSet attrs) {
-        super(context, attrs);
+	public ChartCanvasView(Context context, AttributeSet attrs) {
+		super(context, attrs);
 
-        setWillNotDraw(false);
+		setWillNotDraw(false);
 
-        mScaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
-    }
+		mScaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
+	}
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // OVERRIDES
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// OVERRIDES
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        mViewBounds = new Rect(0, 0, w, h);
-    }
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		super.onSizeChanged(w, h, oldw, oldh);
+		mViewBounds = new Rect(0, 0, w, h);
+	}
 
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
+	@Override
+	protected void onDraw(Canvas canvas) {
+		super.onDraw(canvas);
 
-        drawGrid(canvas);
+		drawGrid(canvas);
 
-        for (AbstractSeries series : mSeries) {
-            series.draw(canvas, mViewBounds, mViewport);
-        }
-    }
+		for (AbstractSeries series : mSeries) {
+			series.draw(canvas, mViewBounds, mViewport);
+		}
+	}
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        mScaleGestureDetector.onTouchEvent(event);
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		mScaleGestureDetector.onTouchEvent(event);
 
-        final int action = event.getAction();
-        switch (action & MotionEvent.ACTION_MASK) {
-            case MotionEvent.ACTION_DOWN: {
-                final float x = event.getX();
-                final float y = event.getY();
+		final int action = event.getAction();
+		switch (action & MotionEvent.ACTION_MASK) {
+		case MotionEvent.ACTION_DOWN: {
+			final float x = event.getX();
+			final float y = event.getY();
 
-                mLastTouchX = x;
-                mLastTouchY = y;
-                mActivePointerId = event.getPointerId(0);
+			mLastTouchX = x;
+			mLastTouchY = y;
+			mActivePointerId = event.getPointerId(0);
 
-                break;
-            }
-            case MotionEvent.ACTION_MOVE: {
-                final int pointerIndex = event.findPointerIndex(mActivePointerId);
-                final float x = event.getX(pointerIndex);
-                final float y = event.getY(pointerIndex);
+			break;
+		}
+		case MotionEvent.ACTION_MOVE: {
+			final int pointerIndex = event.findPointerIndex(mActivePointerId);
+			final float x = event.getX(pointerIndex);
+			final float y = event.getY(pointerIndex);
 
-                if (!mScaleGestureDetector.isInProgress()) {
-                    final float dx = x - mLastTouchX;
-                    final float dy = y - mLastTouchY;
+			if (!mScaleGestureDetector.isInProgress()) {
+				final float dx = x - mLastTouchX;
+				final float dy = y - mLastTouchY;
 
-                    mViewportOffsetX += dx;
-                    mViewportOffsetY += dy;
+				mViewportOffsetX += dx;
+				mViewportOffsetY += dy;
 
-                    updateViewport();
-                    invalidate();
-                }
+				updateViewport();
+				invalidate();
+			}
 
-                mLastTouchX = x;
-                mLastTouchY = y;
+			mLastTouchX = x;
+			mLastTouchY = y;
 
-                break;
-            }
-            case MotionEvent.ACTION_UP: {
-                mActivePointerId = INVALID_POINTER_ID;
-                break;
-            }
-            case MotionEvent.ACTION_CANCEL: {
-                mActivePointerId = INVALID_POINTER_ID;
-                break;
-            }
-            case MotionEvent.ACTION_POINTER_UP: {
-                final int pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
-                final int pointerId = event.getPointerId(pointerIndex);
-                if (pointerId == mActivePointerId) {
-                    final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-                    mLastTouchX = event.getX(newPointerIndex);
-                    mLastTouchY = event.getY(newPointerIndex);
-                    mActivePointerId = event.getPointerId(newPointerIndex);
-                }
-                break;
-            }
-        }
+			break;
+		}
+		case MotionEvent.ACTION_UP: {
+			mActivePointerId = INVALID_POINTER_ID;
+			break;
+		}
+		case MotionEvent.ACTION_CANCEL: {
+			mActivePointerId = INVALID_POINTER_ID;
+			break;
+		}
+		case MotionEvent.ACTION_POINTER_UP: {
+			final int pointerIndex = (action & MotionEvent.ACTION_POINTER_INDEX_MASK) >> MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+			final int pointerId = event.getPointerId(pointerIndex);
+			if (pointerId == mActivePointerId) {
+				final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+				mLastTouchX = event.getX(newPointerIndex);
+				mLastTouchY = event.getY(newPointerIndex);
+				mActivePointerId = event.getPointerId(newPointerIndex);
+			}
+			break;
+		}
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PUBLIC METHODS
-    //////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PUBLIC METHODS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    // Listeners
+	// Listeners
 
-    public ChartCanvasViewListener getChartCanvasViewListener() {
-        return mChartCanvasViewListener;
-    }
+	public ChartCanvasViewListener getChartCanvasViewListener() {
+		return mChartCanvasViewListener;
+	}
 
-    public void setChartCanvasViewListener(ChartCanvasViewListener listener) {
-        mChartCanvasViewListener = listener;
-    }
+	public void setChartCanvasViewListener(ChartCanvasViewListener listener) {
+		mChartCanvasViewListener = listener;
+	}
 
-    // Grid properties
+	// Grid properties
 
-    public int getGridColor() {
-        return mGridPaint.getColor();
-    }
+	public boolean getDrawBorder() {
+		return mDrawBorder;
+	}
 
-    public float getGridLineWidth() {
-        return mGridPaint.getStrokeWidth();
-    }
+	public int getGridColor() {
+		return mGridPaint.getColor();
+	}
 
-    public double getGridStepX() {
-        return mGridStepX;
-    }
+	public float getGridLineWidth() {
+		return mGridPaint.getStrokeWidth();
+	}
 
-    public double getGridStepY() {
-        return mGridStepY;
-    }
+	public double getGridStepX() {
+		return mGridStepX;
+	}
 
-    public void setGridLineColor(int color) {
-        mGridPaint.setColor(color);
+	public double getGridStepY() {
+		return mGridStepY;
+	}
+
+	public void setDrawBorder(boolean drawBorder) {
+		mDrawBorder = drawBorder;
         invalidate();
-    }
+	}
 
-    public void setGridLineWidth(float width) {
-        mGridPaint.setStrokeWidth(width);
-        invalidate();
-    }
+	public void setGridLineColor(int color) {
+		mGridPaint.setColor(color);
+		invalidate();
+	}
 
-    public void setGridStepX(double step) {
-        mGridStepX = step;
-        invalidate();
-    }
+	public void setGridLineWidth(float width) {
+		mGridPaint.setStrokeWidth(width);
+		invalidate();
+	}
 
-    public void setGridStepY(double step) {
-        mGridStepY = step;
-        invalidate();
-    }
+	public void setGridStepX(double step) {
+		mGridStepX = step;
+		invalidate();
+	}
 
-    // Series methods
+	public void setGridStepY(double step) {
+		mGridStepY = step;
+		invalidate();
+	}
 
-    public double getMinX() {
-        return mUserBounds.left;
-    }
+	// Series methods
 
-    public double getMaxX() {
-        return mUserBounds.right;
-    }
+	public double getMinX() {
+		return mUserBounds.left;
+	}
 
-    public double getMinY() {
-        return mUserBounds.top;
-    }
+	public double getMaxX() {
+		return mUserBounds.right;
+	}
 
-    public double getMaxY() {
-        return mUserBounds.bottom;
-    }
+	public double getMinY() {
+		return mUserBounds.top;
+	}
 
-    public float getZoom() {
-        return mZoom;
-    }
+	public double getMaxY() {
+		return mUserBounds.bottom;
+	}
 
-    public float getMinZoom() {
-        return mMinZoom;
-    }
+	public float getZoom() {
+		return mZoom;
+	}
 
-    public float getMaxZoom() {
-        return mMaxZoom;
-    }
+	public float getMinZoom() {
+		return mMinZoom;
+	}
 
-    public boolean getStretchToFit() {
-        return mStretchToFit;
-    }
+	public float getMaxZoom() {
+		return mMaxZoom;
+	}
 
-    public void setMinX(double minX) {
-        mUserBounds.left = minX;
-        updateViewport();
-        invalidate();
-    }
+	public boolean getStretchToFit() {
+		return mStretchToFit;
+	}
 
-    public void setMaxX(double maxX) {
-        mUserBounds.right = maxX;
-        updateViewport();
-        invalidate();
-    }
+	public void setMinX(double minX) {
+		mUserBounds.left = minX;
+		updateViewport();
+		invalidate();
+	}
 
-    public void setMinY(double minY) {
-        mUserBounds.top = minY;
-        updateViewport();
-        invalidate();
-    }
+	public void setMaxX(double maxX) {
+		mUserBounds.right = maxX;
+		updateViewport();
+		invalidate();
+	}
 
-    public void setMaxY(double maxY) {
-        mUserBounds.bottom = maxY;
-        updateViewport();
-        invalidate();
-    }
+	public void setMinY(double minY) {
+		mUserBounds.top = minY;
+		updateViewport();
+		invalidate();
+	}
 
-    public void setZoom(float zoom) {
-        mZoom = zoom;
-    }
+	public void setMaxY(double maxY) {
+		mUserBounds.bottom = maxY;
+		updateViewport();
+		invalidate();
+	}
 
-    public void setMinZoom(float minZoom) {
-        mMinZoom = minZoom;
-    }
+	public void setZoom(float zoom) {
+		mZoom = zoom;
+	}
 
-    public void setMaxZoom(float maxZoom) {
-        mMaxZoom = maxZoom;
-    }
+	public void setMinZoom(float minZoom) {
+		mMinZoom = minZoom;
+	}
 
-    public void setStretchToFit(boolean stretchToFit) {
-        mStretchToFit = false;
-    }
+	public void setMaxZoom(float maxZoom) {
+		mMaxZoom = maxZoom;
+	}
 
-    public void clearSeries() {
-        mSeries = new ArrayList<AbstractSeries>();
-        resetRange();
-        invalidate();
-    }
+	public void setStretchToFit(boolean stretchToFit) {
+		mStretchToFit = false;
+	}
 
-    public void addSeries(AbstractSeries series) {
-        if (mSeries == null) {
-            mSeries = new ArrayList<AbstractSeries>();
-        }
+	public void clearSeries() {
+		mSeries = new ArrayList<AbstractSeries>();
+		resetRange();
+		invalidate();
+	}
 
-        extendRange(series.getMinX(), series.getMinY());
-        extendRange(series.getMaxX(), series.getMaxY());
+	public void addSeries(AbstractSeries series) {
+		if (mSeries == null) {
+			mSeries = new ArrayList<AbstractSeries>();
+		}
 
-        mSeries.add(series);
+		extendRange(series.getMinX(), series.getMinY());
+		extendRange(series.getMaxX(), series.getMaxY());
 
-        invalidate();
-    }
+		mSeries.add(series);
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PRIVATE METHODS
-    //////////////////////////////////////////////////////////////////////////////////////
+		invalidate();
+	}
 
-    private void extendRange(double x, double y) {
-        mValueBounds.left = Math.min(x, mValueBounds.left);
-        mValueBounds.top = Math.min(y, mValueBounds.top);
-        mValueBounds.right = Math.max(x, mValueBounds.right);
-        mValueBounds.bottom = Math.max(y, mValueBounds.bottom);
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PRIVATE METHODS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-        updateViewport();
-    }
+	private void extendRange(double x, double y) {
+		mValueBounds.left = Math.min(x, mValueBounds.left);
+		mValueBounds.top = Math.min(y, mValueBounds.top);
+		mValueBounds.right = Math.max(x, mValueBounds.right);
+		mValueBounds.bottom = Math.max(y, mValueBounds.bottom);
 
-    private void resetRange() {
-        mValueBounds.set(Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
-        updateViewport();
-    }
+		updateViewport();
+	}
 
-    private void updateViewport() {
-        mViewport.set(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+	private void resetRange() {
+		mValueBounds.set(Double.MAX_VALUE, Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+		updateViewport();
+	}
 
-        mViewport.left = Math.max(mUserBounds.left, Math.max(mValueBounds.left, mViewport.left));
-        mViewport.top = Math.max(mUserBounds.top, Math.max(mValueBounds.top, mViewport.top));
-        mViewport.right = Math.min(mUserBounds.right, Math.min(mValueBounds.right, mViewport.right));
-        mViewport.bottom = Math.min(mUserBounds.bottom, Math.min(mValueBounds.bottom, mViewport.bottom));
+	private void updateViewport() {
+		mViewport.set(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
 
-        mViewport.offset(mViewportOffsetX, mViewportOffsetY);
+		mViewport.left = Math.max(mUserBounds.left, Math.max(mValueBounds.left, mViewport.left));
+		mViewport.top = Math.max(mUserBounds.top, Math.max(mValueBounds.top, mViewport.top));
+		mViewport.right = Math.min(mUserBounds.right, Math.min(mValueBounds.right, mViewport.right));
+		mViewport.bottom = Math.min(mUserBounds.bottom, Math.min(mValueBounds.bottom, mViewport.bottom));
 
-        double adjustWidth = 0;
-        double adjustHeight = 0;
+		mViewport.offset(mViewportOffsetX, mViewportOffsetY);
 
-        // Preserve view aspect
-        if (!mStretchToFit) {
-            if (mValueBounds.width() > mValueBounds.height()) {
-                adjustHeight = mViewport.width() / 2;
-            }
-            else if (mValueBounds.height() > mValueBounds.width()) {
-                adjustWidth = mViewport.height() / 2;
-            }
-        }
+		double adjustWidth = 0;
+		double adjustHeight = 0;
 
-        // Zoom amount
-        adjustWidth += ((mViewport.width() / mZoom) - mViewport.width()) / 2;
-        adjustHeight += ((mViewport.height() / mZoom) - mViewport.height()) / 2;
+		// Preserve view aspect
+		if (!mStretchToFit) {
+			if (mValueBounds.width() > mValueBounds.height()) {
+				adjustHeight = mViewport.width() / 2;
+			}
+			else if (mValueBounds.height() > mValueBounds.width()) {
+				adjustWidth = mViewport.height() / 2;
+			}
+		}
 
-        mViewport.left -= adjustWidth;
-        mViewport.top -= adjustHeight;
-        mViewport.right += adjustWidth;
-        mViewport.bottom += adjustHeight;
+		// Zoom amount
+		adjustWidth += ((mViewport.width() / mZoom) - mViewport.width()) / 2;
+		adjustHeight += ((mViewport.height() / mZoom) - mViewport.height()) / 2;
 
-        if (mChartCanvasViewListener != null) {
-            mChartCanvasViewListener.onViewportChanged(mViewport);
-        }
-    }
+		mViewport.left -= adjustWidth;
+		mViewport.top -= adjustHeight;
+		mViewport.right += adjustWidth;
+		mViewport.bottom += adjustHeight;
 
-    // Drawing
+		if (mChartCanvasViewListener != null) {
+			mChartCanvasViewListener.onViewportChanged(mViewport);
+		}
+	}
 
-    private void drawGrid(Canvas canvas) {
-        if (mGridStepX < 0) {
-            mGridStepX = (float) mValueBounds.width() / 5f;
-        }
-        if (mGridStepY < 0) {
-            mGridStepY = (float) mValueBounds.height() / 5f;
-        }
+	// Drawing
 
-        final float stepX = mViewBounds.width() / (float) (mGridStepX + 1);
-        final float stepY = mViewBounds.height() / (float) (mGridStepY + 1);
+	private void drawGrid(Canvas canvas) {
+		if (mGridStepX < 0) {
+			mGridStepX = (float) mValueBounds.width() / 5f;
+		}
+		if (mGridStepY < 0) {
+			mGridStepY = (float) mValueBounds.height() / 5f;
+		}
 
-        final float left = mViewBounds.left;
-        final float top = mViewBounds.top;
-        final float bottom = mViewBounds.bottom;
-        final float right = mViewBounds.right;
+		final float stepX = mViewBounds.width() / (float) (mGridStepX + 1);
+		final float stepY = mViewBounds.height() / (float) (mGridStepY + 1);
 
-        // draw border
-        canvas.drawLine(left, top, left, bottom, mGridPaint);
-        canvas.drawLine(left, top, right, top, mGridPaint);
-        canvas.drawLine(right, top, right, bottom, mGridPaint);
-        canvas.drawLine(left, bottom, right, bottom, mGridPaint);
+		final float left = mViewBounds.left;
+		final float top = mViewBounds.top;
+		final float bottom = mViewBounds.bottom;
+		final float right = mViewBounds.right;
 
-        // draw grid
-        for (int i = 0; i < mGridStepX + 2; i++) {
-            canvas.drawLine(left + (stepX * i), top, left + (stepX * i), bottom, mGridPaint);
-        }
+		// draw border
+		if (mDrawBorder) {
+			canvas.drawLine(left, top, left, bottom, mGridPaint);
+			canvas.drawLine(left, top, right, top, mGridPaint);
+			canvas.drawLine(right, top, right, bottom, mGridPaint);
+			canvas.drawLine(left, bottom, right, bottom, mGridPaint);
+		}
 
-        for (int i = 0; i < mGridStepY + 2; i++) {
-            canvas.drawLine(left, top + (stepY * i), right, top + (stepY * i), mGridPaint);
-        }
-    }
+		// draw grid
+		for (int i = 0; i < mGridStepX + 2; i++) {
+			canvas.drawLine(left + (stepX * i), top, left + (stepX * i), bottom, mGridPaint);
+		}
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // PACKAGE METHODS
-    //////////////////////////////////////////////////////////////////////////////////////
+		for (int i = 0; i < mGridStepY + 2; i++) {
+			canvas.drawLine(left, top + (stepY * i), right, top + (stepY * i), mGridPaint);
+		}
+	}
 
-    float getViewportOffsetX() {
-        return mViewportOffsetX;
-    }
+	//////////////////////////////////////////////////////////////////////////////////////
+	// PACKAGE METHODS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-    float getViewportOffsetY() {
-        return mViewportOffsetY;
-    }
+	float getViewportOffsetX() {
+		return mViewportOffsetX;
+	}
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    // LISTENERS
-    //////////////////////////////////////////////////////////////////////////////////////
+	float getViewportOffsetY() {
+		return mViewportOffsetY;
+	}
 
-    private class ScaleListener extends SimpleOnScaleGestureListener {
-        @Override
-        public boolean onScale(ScaleGestureDetector detector) {
-            mZoom *= detector.getScaleFactor();
-            mZoom = Math.max(mMinZoom, Math.min(mZoom, mMaxZoom));
+	//////////////////////////////////////////////////////////////////////////////////////
+	// LISTENERS
+	//////////////////////////////////////////////////////////////////////////////////////
 
-            updateViewport();
-            invalidate();
+	private class ScaleListener extends SimpleOnScaleGestureListener {
+		@Override
+		public boolean onScale(ScaleGestureDetector detector) {
+			mZoom *= detector.getScaleFactor();
+			mZoom = Math.max(mMinZoom, Math.min(mZoom, mMaxZoom));
 
-            return true;
-        }
-    }
+			updateViewport();
+			invalidate();
+
+			return true;
+		}
+	}
 }

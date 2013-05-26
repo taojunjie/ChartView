@@ -119,11 +119,11 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
 
     // Listeners
 
-    public ChartCanvasView.ChartCanvasViewListener getOnViewportChangedListener() {
+    public ChartCanvasView.ChartCanvasViewListener getChartCanvasViewListener() {
         return mChartCanvasViewListener;
     }
 
-    public void setOnViewportChangedListener(ChartCanvasView.ChartCanvasViewListener listener) {
+    public void setChartCanvasViewListener(ChartCanvasView.ChartCanvasViewListener listener) {
         mChartCanvasViewListener = listener;
     }
 
@@ -492,7 +492,7 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
 
     @Override
     public void onViewportChanged(RectD viewport) {
-        updateLabelValues(viewport);
+        //updateLabelValues(viewport);
 
         if (mChartCanvasViewListener != null) {
             mChartCanvasViewListener.onViewportChanged(viewport);

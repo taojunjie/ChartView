@@ -21,8 +21,8 @@ public class LinearSeries extends AbstractSeries {
 			mScaleY = (float) viewBounds.height() / (float) viewport.height();
 		}
 
-		final float x = (float) (viewBounds.left + (mScaleX * (point.getX() - getMinX())) + viewport.left);
-		final float y = (float) (viewBounds.bottom - (mScaleY * (point.getY() - getMinY())) + viewport.bottom);
+		final float x = (float) (viewBounds.left + (mScaleX * (point.getX() - getMinX())));
+		final float y = (float) (viewBounds.bottom - (mScaleY * (point.getY() - getMinY())));
 
 		if (mLastPoint != null) {
 			canvas.drawLine(mLastPoint.x, mLastPoint.y, x, y, mPaint);

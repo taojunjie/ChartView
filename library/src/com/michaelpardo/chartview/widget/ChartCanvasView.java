@@ -67,7 +67,6 @@ public class ChartCanvasView extends View {
 	private RectD mViewport = new RectD(-Double.MAX_VALUE, -Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
 	private float mViewportOffsetX = 0;
 	private float mViewportOffsetY = 0;
-	private boolean mStretchToFit = false;
 
 	// Zoom
 	private float mZoom = DEFAULT_ZOOM;
@@ -111,7 +110,7 @@ public class ChartCanvasView extends View {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 
-		drawGrid(canvas);
+		//drawGrid(canvas);
 
 		for (AbstractSeries series : mSeries) {
 			series.draw(canvas, mViewBounds, mViewport);
@@ -217,7 +216,7 @@ public class ChartCanvasView extends View {
 
 	public void setDrawBorder(boolean drawBorder) {
 		mDrawBorder = drawBorder;
-        invalidate();
+		invalidate();
 	}
 
 	public void setGridLineColor(int color) {
@@ -270,10 +269,6 @@ public class ChartCanvasView extends View {
 		return mMaxZoom;
 	}
 
-	public boolean getStretchToFit() {
-		return mStretchToFit;
-	}
-
 	public void setMinX(double minX) {
 		mUserBounds.left = minX;
 		updateViewport();
@@ -310,10 +305,6 @@ public class ChartCanvasView extends View {
 		mMaxZoom = maxZoom;
 	}
 
-	public void setStretchToFit(boolean stretchToFit) {
-		mStretchToFit = false;
-	}
-
 	public void clearSeries() {
 		mSeries = new ArrayList<AbstractSeries>();
 		resetRange();
@@ -330,6 +321,7 @@ public class ChartCanvasView extends View {
 
 		mSeries.add(series);
 
+		updateViewport();
 		invalidate();
 	}
 
@@ -342,8 +334,6 @@ public class ChartCanvasView extends View {
 		mValueBounds.top = Math.min(y, mValueBounds.top);
 		mValueBounds.right = Math.max(x, mValueBounds.right);
 		mValueBounds.bottom = Math.max(y, mValueBounds.bottom);
-
-		updateViewport();
 	}
 
 	private void resetRange() {
@@ -364,16 +354,6 @@ public class ChartCanvasView extends View {
 		double adjustWidth = 0;
 		double adjustHeight = 0;
 
-		// Preserve view aspect
-		if (!mStretchToFit) {
-			if (mValueBounds.width() > mValueBounds.height()) {
-				adjustHeight = mViewport.width() / 2;
-			}
-			else if (mValueBounds.height() > mValueBounds.width()) {
-				adjustWidth = mViewport.height() / 2;
-			}
-		}
-
 		// Zoom amount
 		adjustWidth += ((mViewport.width() / mZoom) - mViewport.width()) / 2;
 		adjustHeight += ((mViewport.height() / mZoom) - mViewport.height()) / 2;
@@ -391,15 +371,8 @@ public class ChartCanvasView extends View {
 	// Drawing
 
 	private void drawGrid(Canvas canvas) {
-		if (mGridStepX < 0) {
-			mGridStepX = (float) mValueBounds.width() / 5f;
-		}
-		if (mGridStepY < 0) {
-			mGridStepY = (float) mValueBounds.height() / 5f;
-		}
-
-		final float stepX = mViewBounds.width() / (float) (mGridStepX + 1);
-		final float stepY = mViewBounds.height() / (float) (mGridStepY + 1);
+		final float stepX = (float) (mViewBounds.width() / mValueBounds.width() / mGridStepX);
+		final float stepY = (float) (mViewBounds.width() / mValueBounds.height() / mGridStepY);
 
 		final float left = mViewBounds.left;
 		final float top = mViewBounds.top;

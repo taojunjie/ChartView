@@ -111,7 +111,7 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        drawLabels(canvas);
+        //drawLabels(canvas);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -243,10 +243,6 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
         return mChartCanvasView.getMaxZoom();
     }
 
-    public boolean getStretchToFit() {
-        return mChartCanvasView.getStretchToFit();
-    }
-
     public void setMinX(double minX) {
         mChartCanvasView.setMinX(minX);
         invalidate();
@@ -277,10 +273,6 @@ public class ChartView extends RelativeLayout implements ChartCanvasView.ChartCa
 
     public void setMaxZoom(float maxZoom) {
         mChartCanvasView.setMaxZoom(maxZoom);
-    }
-
-    public void setStretchToFit(boolean stretchToFit) {
-        mChartCanvasView.setStretchToFit(stretchToFit);
     }
 
     //////////////////////////////////////////////////////////////////////////////////////

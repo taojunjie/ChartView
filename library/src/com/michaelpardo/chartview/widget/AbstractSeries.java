@@ -142,6 +142,8 @@ public abstract class AbstractSeries {
 	protected void draw(Canvas canvas, Rect viewBounds, RectD viewport) {
 		sortPoints();
 
+        onDrawingStarted(canvas);
+
 		canvas.save();
 		canvas.clipRect(viewBounds);
 
@@ -151,7 +153,7 @@ public abstract class AbstractSeries {
 
 		canvas.restore();
 
-		onDrawingComplete();
+		onDrawingComplete(canvas);
 	}
 
 	protected void sortPoints() {
@@ -161,7 +163,10 @@ public abstract class AbstractSeries {
 		}
 	}
 
-	protected void onDrawingComplete() {
+	protected void onDrawingStarted(Canvas canvas) {
+	}
+
+	protected void onDrawingComplete(Canvas canvas) {
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////

@@ -1,23 +1,21 @@
-package com.michaelpardo.chartview.widget;
+package com.michaelpardo.chartview.series;
+
+import android.graphics.Path;
+import android.graphics.Rect;
+
+import com.michaelpardo.chartview.axis.ChartAxis;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Rect;
-
-import com.michaelpardo.chartview.graphics.RectD;
 
 public abstract class AbstractSeries {
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE MEMBERS
 	//////////////////////////////////////////////////////////////////////////////////////
 
-	protected Paint mPaint = new Paint();
+	protected List<AbstractPoint> mPoints;
 
-	private List<AbstractPoint> mPoints;
 	private boolean mPointsSorted = false;
 
 	private double mMinX = Double.MAX_VALUE;
@@ -28,14 +26,13 @@ public abstract class AbstractSeries {
 	private double mRangeX = 0;
 	private double mRangeY = 0;
 
-	protected abstract void drawPoint(Canvas canvas, AbstractPoint point, Rect viewBounds, RectD viewport);
+	protected abstract void onGeneratePath(ChartAxis horiz, ChartAxis vert, Rect viewBounds, Path strokePath, Path fillPath);
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	public AbstractSeries() {
-		mPaint.setAntiAlias(true);
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -70,15 +67,11 @@ public abstract class AbstractSeries {
 		mPointsSorted = false;
 	}
 
-	// Line properties
-
-	public void setLineColor(int color) {
-		mPaint.setColor(color);
+	public void generatePath(ChartAxis horiz, ChartAxis vert, Rect viewBounds, Path strokePath, Path fillPath) {
+		sortPoints();
+		onGeneratePath(horiz, vert, viewBounds, strokePath, fillPath);
 	}
 
-	public void setLineWidth(float width) {
-		mPaint.setStrokeWidth(width);
-	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE METHODS
@@ -115,45 +108,28 @@ public abstract class AbstractSeries {
 		mRangeY = mMaxY - mMinY;
 	}
 
-	double getMinX() {
+	public double getMinX() {
 		return mMinX;
 	}
 
-	double getMaxX() {
+	public double getMaxX() {
 		return mMaxX;
 	}
 
-	double getMinY() {
+	public double getMinY() {
 		return mMinY;
 	}
 
-	double getMaxY() {
+	public double getMaxY() {
 		return mMaxY;
 	}
 
-	double getRangeX() {
+	public double getRangeX() {
 		return mRangeX;
 	}
 
-	double getRangeY() {
+	public double getRangeY() {
 		return mRangeY;
-	}
-
-	protected void draw(Canvas canvas, Rect viewBounds, RectD viewport) {
-		sortPoints();
-
-        onDrawingStarted(canvas);
-
-		canvas.save();
-		canvas.clipRect(viewBounds);
-
-		for (AbstractPoint point : mPoints) {
-			drawPoint(canvas, point, viewBounds, viewport);
-		}
-
-		canvas.restore();
-
-		onDrawingComplete(canvas);
 	}
 
 	protected void sortPoints() {
@@ -161,12 +137,6 @@ public abstract class AbstractSeries {
 			Collections.sort(mPoints);
 			mPointsSorted = true;
 		}
-	}
-
-	protected void onDrawingStarted(Canvas canvas) {
-	}
-
-	protected void onDrawingComplete(Canvas canvas) {
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////

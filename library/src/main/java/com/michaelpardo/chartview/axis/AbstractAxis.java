@@ -1,8 +1,8 @@
 package com.michaelpardo.chartview.axis;
 
 public abstract class AbstractAxis implements ChartAxis {
-	private double mMin;
-	private double mMax;
+	private float mMin;
+	private float mMax;
 	private float mSize;
 
 	private int mTickTarget = 16;
@@ -12,7 +12,7 @@ public abstract class AbstractAxis implements ChartAxis {
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	@Override
-	public boolean setBounds(double min, double max) {
+	public boolean setBounds(float min, float max) {
 		if (mMin != min || mMax != max) {
 			mMin = min;
 			mMax = max;
@@ -33,12 +33,12 @@ public abstract class AbstractAxis implements ChartAxis {
 	}
 
 	@Override
-	public float convertToPoint(double value) {
+	public float convertToPoint(float value) {
 		return (float) ((mSize * (value - mMin)) / (mMax - mMin));
 	}
 
 	@Override
-	public double convertToValue(float point) {
+	public float convertToValue(float point) {
 		return mMin + ((point * (mMax - mMin)) / mSize);
 	}
 
@@ -50,7 +50,7 @@ public abstract class AbstractAxis implements ChartAxis {
 		final long tickJump = roundUpToPowerOfTwo(Math.round(range) / mTickTarget);
 		final int tickCount = (int) (range / tickJump);
 		final float[] tickPoints = new float[tickCount];
-		double value = mMin;
+		float value = mMin;
 		for (int i = 0; i < tickPoints.length; i++) {
 			tickPoints[i] = convertToPoint(value);
 			value += tickJump;

@@ -31,7 +31,7 @@ public class InvertedChartAxis implements ChartAxis {
     }
 
     @Override
-    public boolean setBounds(double min, double max) {
+    public boolean setBounds(float min, float max) {
         return mWrapped.setBounds(min, max);
     }
 
@@ -42,17 +42,17 @@ public class InvertedChartAxis implements ChartAxis {
     }
 
     @Override
-    public float convertToPoint(double value) {
+    public float convertToPoint(float value) {
         return mSize - mWrapped.convertToPoint(value);
     }
 
     @Override
-    public double convertToValue(float point) {
+    public float convertToValue(float point) {
         return mWrapped.convertToValue(mSize - point);
     }
 
     @Override
-    public double buildLabel(Resources res, SpannableStringBuilder builder, double value) {
+    public float buildLabel(Resources res, SpannableStringBuilder builder, float value) {
         return mWrapped.buildLabel(res, builder, value);
     }
 

@@ -5,7 +5,7 @@ import android.text.SpannableStringBuilder;
 
 public class ValueAxis extends AbstractAxis {
 	@Override
-	public double buildLabel(Resources res, SpannableStringBuilder builder, double value) {
+	public float buildLabel(Resources res, SpannableStringBuilder builder, float value) {
 		return value;
 	}
 }

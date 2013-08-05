@@ -4,15 +4,15 @@ import android.content.res.Resources;
 import android.text.SpannableStringBuilder;
 
 public interface ChartAxis {
-	public boolean setBounds(double min, double max);
+	public boolean setBounds(float min, float max);
 
 	public boolean setSize(float size);
 
-	public float convertToPoint(double value);
+	public float convertToPoint(float value);
 
-	public double convertToValue(float point);
+	public float convertToValue(float point);
 
-	public double buildLabel(Resources res, SpannableStringBuilder builder, double value);
+	public float buildLabel(Resources res, SpannableStringBuilder builder, float value);
 
 	public float[] getTickPoints();
 }

@@ -18,15 +18,16 @@ public abstract class AbstractSeries {
 
 	private boolean mPointsSorted = false;
 
-	private double mMinX = Double.MAX_VALUE;
-	private double mMaxX = -Double.MAX_VALUE;
-	private double mMinY = Double.MAX_VALUE;
-	private double mMaxY = -Double.MAX_VALUE;
+	private float mMinX = Float.MAX_VALUE;
+	private float mMaxX = -Float.MAX_VALUE;
+	private float mMinY = Float.MAX_VALUE;
+	private float mMaxY = -Float.MAX_VALUE;
 
-	private double mRangeX = 0;
-	private double mRangeY = 0;
+	private float mRangeX = 0;
+	private float mRangeY = 0;
 
-	protected abstract void onGeneratePath(ChartAxis horiz, ChartAxis vert, Rect viewBounds, Path strokePath, Path fillPath);
+	protected abstract void onGeneratePath(ChartAxis horiz, ChartAxis vert, Rect viewBounds, Path strokePath,
+			Path fillPath);
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	// CONSTRUCTORS
@@ -72,22 +73,21 @@ public abstract class AbstractSeries {
 		onGeneratePath(horiz, vert, viewBounds, strokePath, fillPath);
 	}
 
-
 	//////////////////////////////////////////////////////////////////////////////////////
 	// PRIVATE METHODS
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	private void resetRange() {
-		mMinX = Double.MAX_VALUE;
-		mMaxX = -Double.MAX_VALUE;
-		mMinY = Double.MAX_VALUE;
-		mMaxY = -Double.MAX_VALUE;
+		mMinX = Float.MAX_VALUE;
+		mMaxX = -Float.MAX_VALUE;
+		mMinY = Float.MAX_VALUE;
+		mMaxY = -Float.MAX_VALUE;
 
 		mRangeX = 0;
 		mRangeY = 0;
 	}
 
-	private void extendRange(double x, double y) {
+	private void extendRange(float x, float y) {
 		if (x < mMinX) {
 			mMinX = x;
 		}
@@ -108,27 +108,27 @@ public abstract class AbstractSeries {
 		mRangeY = mMaxY - mMinY;
 	}
 
-	public double getMinX() {
+	public float getMinX() {
 		return mMinX;
 	}
 
-	public double getMaxX() {
+	public float getMaxX() {
 		return mMaxX;
 	}
 
-	public double getMinY() {
+	public float getMinY() {
 		return mMinY;
 	}
 
-	public double getMaxY() {
+	public float getMaxY() {
 		return mMaxY;
 	}
 
-	public double getRangeX() {
+	public float getRangeX() {
 		return mRangeX;
 	}
 
-	public double getRangeY() {
+	public float getRangeY() {
 		return mRangeY;
 	}
 
@@ -144,33 +144,33 @@ public abstract class AbstractSeries {
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	public static abstract class AbstractPoint implements Comparable<AbstractPoint> {
-		private double mX;
-		private double mY;
+		private float mX;
+		private float mY;
 
 		public AbstractPoint() {
 		}
 
-		public AbstractPoint(double x, double y) {
+		public AbstractPoint(float x, float y) {
 			mX = x;
 			mY = y;
 		}
 
-		public double getX() {
+		public float getX() {
 			return mX;
 		}
 
-		public double getY() {
+		public float getY() {
 			return mY;
 		}
 
-		public void set(double x, double y) {
+		public void set(float x, float y) {
 			mX = x;
 			mY = y;
 		}
 
 		@Override
 		public int compareTo(AbstractPoint another) {
-			return Double.compare(mX, another.mX);
+			return Float.compare(mX, another.mX);
 		}
 	}
 }

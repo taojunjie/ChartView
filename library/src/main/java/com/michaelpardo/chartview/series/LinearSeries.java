@@ -9,24 +9,26 @@ public class LinearSeries extends AbstractSeries {
 	@Override
 	public void onGeneratePath(ChartAxis horiz, ChartAxis vert, Rect viewBounds, Path strokePath, Path fillPath) {
 		final int size = mPoints.size();
-		for (int i = 0; i < size; i++) {
-			AbstractPoint point = mPoints.get(i);
+		int location = 0;
+
+		for (AbstractPoint point : mPoints) {
 			final float x = horiz.convertToPoint(point.getX());
 			final float y = vert.convertToPoint(point.getY());
 
-			if (i == 0) {
+			if (location == 0) {
 				strokePath.moveTo(x, y);
 				fillPath.moveTo(x, y);
-				continue;
 			}
-
-			strokePath.lineTo(x, y);
-			fillPath.lineTo(x, y);
-
-			if (i == size - 1) {
+			else if (location == size - 1) {
 				fillPath.lineTo(x, viewBounds.bottom);
 				fillPath.lineTo(0, viewBounds.bottom);
 			}
+			else {
+				strokePath.lineTo(x, y);
+				fillPath.lineTo(x, y);
+			}
+
+			location++;
 		}
 	}
 
@@ -35,7 +37,7 @@ public class LinearSeries extends AbstractSeries {
 			super();
 		}
 
-		public LinearPoint(double x, double y) {
+		public LinearPoint(float x, float y) {
 			super(x, y);
 		}
 	}

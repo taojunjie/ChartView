@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.michaelpardo.chartview.widget.LabelAdapter;
-
+//Test
 public class ValueLabelAdapter extends LabelAdapter {
 	public enum Orientation {
 		HORIZONTAL, VERTICAL
